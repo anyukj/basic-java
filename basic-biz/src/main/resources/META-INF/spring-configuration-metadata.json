@@ -1,0 +1,14 @@
+{
+  "properties": [
+    {
+      "name": "logback.path",
+      "type": "java.lang.String",
+      "description": "日志保存路径."
+    },
+    {
+      "name": "logback.level",
+      "type": "org.springframework.boot.logging.LogLevel",
+      "description": "记录日志的级别."
+    }
+  ]
+}

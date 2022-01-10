@@ -1,0 +1,61 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 50MB
+  messages:
+    basename: i18n/messages
+    encoding: utf-8
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*Mapper.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+knife4j:
+  enable: true
+  documents:
+    -
+      group: 默认分组
+      name: 其他文档
+      locations: classpath:markdown/*
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false
+
+app:
+  swagger:
+    docket:
+      -
+        groupName: 默认分组
+        basePackage: com.wsc.basic
+      -
+        groupName: 系统管理
+        basePackage: com.wsc.basic.biz.system.controller
+
+  whitelist:
+    urls:
+      - /favicon.ico
+      - /swagger-*/**
+      - /webjars/**
+      - /v2/api-docs**
+      - /doc.html
+      - /druid/**
+      - /file/**
+      - /actuator/**
+      - /service/health/check
+      - /sysUser/login

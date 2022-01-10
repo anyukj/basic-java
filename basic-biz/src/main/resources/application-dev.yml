@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          url: jdbc:mysql://chao.ac.cn:3306/basic-system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+          username: root
+          password: s3C7y2@412
+  redis:
+    database: 1
+    host: chao.ac.cn
+    port: 6379
+
+app:
+  file:
+    upload-dir: D:/upload/basic/
+    thumb-width: 200
+    thumb-height: 200
+
+logback:
+  path: D:/logs/basic/
+  level: info

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.wsc.basic.biz.system.dao.SysMenuMapper">
+
+    <select id="getMenuByRoles" resultType="com.wsc.basic.biz.system.model.entity.SysMenu">
+        SELECT DISTINCT A.*
+        FROM sys_menu A LEFT JOIN sys_role_menu B ON A.id = B.menu_id
+        WHERE A.deletion = 0 AND A.status = 0
+        <if test="list != null and list.size > 0">
+            AND B.role_id IN
+            <foreach collection="list" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        ORDER BY A.sort
+    </select>
+
+</mapper>
