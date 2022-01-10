@@ -1,19 +1,3 @@
-/*
- Navicat Premium Data Transfer
-
- Source Server         : 39.105.74.194
- Source Server Type    : MySQL
- Source Server Version : 50561
- Source Host           : 39.105.74.194:3318
- Source Schema         : movie-ticket
-
- Target Server Type    : MySQL
- Target Server Version : 50561
- File Encoding         : 65001
-
- Date: 27/12/2021 09:18:27
-*/
-
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
