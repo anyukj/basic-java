@@ -1,19 +1,19 @@
 package com.wsc.basic.core.aop;
 
+import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.TimedCache;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.wsc.basic.core.annotation.LockPoint;
 import com.wsc.basic.core.exception.GlobalException;
-import com.wsc.basic.core.utils.Sm3Utils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * 参数相同防止重入锁切点
@@ -26,44 +26,33 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LockPointAspect {
 
-    /** 缓存正在操作的方法 */
-    private static final Cache<String, Object> CACHES = CacheBuilder.newBuilder()
-            // 最大缓存数量
-            .maximumSize(512)
-            // 缓存项在给定时间内没有被写访问（创建或覆盖），则回收。如果认为缓存数据总是在固定时候后变得陈旧不可用，这种回收方式是可取的。
-            .expireAfterWrite(10, TimeUnit.SECONDS)
-            .build();
+    /** 创建缓存，默认10秒过期 */
+    private static final TimedCache<String, Boolean> CACHES = CacheUtil.newTimedCache(DateUnit.SECOND.getMillis() * 10);
 
     @Around(value = "@annotation(lockPoint)")
     public Object around(ProceedingJoinPoint joinPoint, LockPoint lockPoint) throws Throwable {
-        String key = lock(joinPoint);
+        String key = generateKey(joinPoint);
         try {
+            lock(key);
             return joinPoint.proceed();
         } finally {
-            // 完成请求后清空key
-            CACHES.invalidate(key);
+            CACHES.remove(key);
         }
     }
 
     /**
      * 加锁
-     *
-     * @param joinPoint 连接点
-     * @return key
-     * @throws Throwable 错误信息
      */
-    private  String lock(ProceedingJoinPoint joinPoint) throws Throwable {
-        String key = generateKey(joinPoint);
-        if (CACHES.getIfPresent(key) != null) {
+    private synchronized void lock(String key) {
+        if (CACHES.containsKey(key)) {
             log.warn("重复的请求：{}", key);
             throw new GlobalException("重复的请求");
         }
         CACHES.put(key, true);
-        return key;
     }
 
     /**
-     * 生成key， key生成规则为【包路径.方法名-Sm3(参数)】
+     * 生成key， key生成规则为【包路径.方法名-md5(参数)】
      *
      * @param joinPoint 连接点
      * @return key
@@ -74,7 +63,7 @@ public class LockPointAspect {
         String className = methodSignature.getMethod().getDeclaringClass().getName();
         String methodName = methodSignature.getMethod().getName();
         String args = new JsonMapper().writeValueAsString(joinPoint.getArgs());
-        return String.format("%s.%s-%s", className, methodName, Sm3Utils.encryption(args));
+        return StrUtil.format("{}.{}-{}", className, methodName, DigestUtil.md5(args));
     }
 
 }

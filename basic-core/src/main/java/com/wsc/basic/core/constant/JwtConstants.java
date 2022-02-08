@@ -15,7 +15,8 @@ public class JwtConstants {
     /** 消息头 */
     public static final String AUTH_HEADER = "Authorization";
     /** 秘钥 */
-    public static final String SIGN_KEY = "Y2Fhc3NlY3JldAo=";
-    /** 有效期:如1小时,60分钟*60秒*1000毫秒=3600000L; */
-    public static final Long EXPIRATION = 3600000L;
+    public static final String SIGN_KEY = "Y2Fhc5NlY3JldAo=";
+    /** 有效期(秒) */
+    public static final Integer EXPIRATION = 3600;
+
 }

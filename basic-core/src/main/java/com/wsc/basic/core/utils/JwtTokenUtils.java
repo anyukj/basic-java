@@ -1,16 +1,17 @@
 package com.wsc.basic.core.utils;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.exceptions.ValidateException;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTValidator;
+import cn.hutool.jwt.signers.JWTSignerUtil;
 import com.wsc.basic.core.constant.JwtConstants;
 import com.wsc.basic.core.model.TokenEntity;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanUtils;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * JWT工具类
@@ -20,60 +21,35 @@ import java.util.Map;
 @Slf4j
 public class JwtTokenUtils {
 
-    private static String generateToken(Map<String, Object> claims) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuer(JwtConstants.ISSUER)
-                .setExpiration(new Date(System.currentTimeMillis() + JwtConstants.EXPIRATION))
-                .signWith(SignatureAlgorithm.HS512, JwtConstants.SIGN_KEY)
-                .compact();
-    }
-
-    private static Claims getClaimsFromToken(String token) {
-        Claims claims;
-        try {
-            claims = Jwts.parser()
-                    .setSigningKey(JwtConstants.SIGN_KEY)
-                    .parseClaimsJws(token.trim())
-                    .getBody();
-        } catch (Exception e) {
-            claims = null;
-        }
-        return claims;
-    }
-
     /**
      * 生成token
      */
     public static String generate(TokenEntity entity) {
-        Map<String, String> map;
-        try {
-            map = BeanUtils.describe(entity);
-        } catch (Exception e) {
-            log.error("TokenEntity convert Map failed");
-            return null;
-        }
-        Map<String, Object> claims = new HashMap<>(map);
-        return String.format("%s %s", JwtConstants.TOKEN_TYPE, generateToken(claims));
+        String token = JWT.create()
+                .addPayloads(BeanUtil.beanToMap(entity))
+                .setExpiresAt(DateTime.now().offset(DateField.SECOND, JwtConstants.EXPIRATION))
+                .setIssuer(JwtConstants.ISSUER)
+                .setSigner(JWTSignerUtil.hs512(JwtConstants.SIGN_KEY.getBytes()))
+                .sign();
+        return StrUtil.format("{} {}", JwtConstants.TOKEN_TYPE, token);
     }
 
     /**
      * 解析token
      */
     public static TokenEntity validation(String token) {
-        Map<String, Object> claims = getClaimsFromToken(token.replace(JwtConstants.TOKEN_TYPE, ""));
-        if (claims == null) {
-            log.warn("Token validation failed");
-            return null;
-        }
-        TokenEntity tokenEntity = new TokenEntity();
+        JWT jwt = JWT.of(StrUtil.trim(StrUtil.removePrefix(token, JwtConstants.TOKEN_TYPE)));
+        // 校验有效性
         try {
-            BeanUtils.populate(tokenEntity, claims);
-        } catch (Exception e) {
-            log.error("Map convert TokenEntity failed");
+            JWTValidator.of(jwt)
+                    .validateAlgorithm(JWTSignerUtil.hs512(JwtConstants.SIGN_KEY.getBytes()))
+                    .validateDate(DateTime.now());
+        } catch (ValidateException e) {
+            log.error("JWT verification failed!", e);
             return null;
         }
-        return tokenEntity;
+        // token内容转实体
+        return JSONUtil.toBean(jwt.getPayload().getClaimsJson(), TokenEntity.class);
     }
 
 }

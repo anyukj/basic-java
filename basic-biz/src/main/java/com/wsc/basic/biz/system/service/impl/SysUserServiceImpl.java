@@ -1,5 +1,8 @@
 package com.wsc.basic.biz.system.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SmUtil;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,7 +20,6 @@ import com.wsc.basic.biz.system.model.dto.user.UserItemDTO;
 import com.wsc.basic.biz.system.model.entity.SysUser;
 import com.wsc.basic.biz.system.model.vo.file.QueryRelationFileVO;
 import com.wsc.basic.biz.system.model.vo.file.RelationFileVO;
-import com.wsc.basic.biz.system.model.vo.user.*;
 import com.wsc.basic.core.annotation.LogPoint;
 import com.wsc.basic.core.config.security.UserContext;
 import com.wsc.basic.core.constant.BizConstant;
@@ -25,7 +27,6 @@ import com.wsc.basic.core.exception.GlobalException;
 import com.wsc.basic.core.model.BasePageDTO;
 import com.wsc.basic.core.model.TokenEntity;
 import com.wsc.basic.core.utils.JwtTokenUtils;
-import com.wsc.basic.core.utils.Sm3Utils;
 import com.wsc.basic.core.utils.SuperBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -58,11 +59,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         // 查询用户信息
         SysUser sysUser = super.getOne(Wrappers.lambdaQuery(SysUser.class)
                 .eq(SysUser::getUserName, entity.getUserName()));
-        if (sysUser == null) {
+        if (ObjectUtil.isNull(sysUser)) {
             throw new GlobalException("用户不存在");
-        } else if (!Sm3Utils.verification(entity.getPassword(), sysUser.getPassword())) {
+        } else if (!StrUtil.equals(SmUtil.sm3(entity.getPassword()), sysUser.getPassword())) {
             throw new GlobalException("密码错误");
-        } else if (sysUser.getStatus().equals(1)) {
+        } else if (ObjectUtil.equals(sysUser.getStatus(), 1)) {
             throw new GlobalException("用户已被停用");
         }
         // 生成并返回token
@@ -102,12 +103,12 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         SysUser sysUser = super.getById(tokenEntity.getUserId());
         if (sysUser == null) {
             throw new GlobalException("用户不存在");
-        } else if (!Sm3Utils.verification(entity.getOldPassword(), sysUser.getPassword())) {
+        } else if (!StrUtil.equals(SmUtil.sm3(entity.getOldPassword()), sysUser.getPassword())) {
             throw new GlobalException("旧密码错误");
         } else if (sysUser.getStatus().equals(1)) {
             throw new GlobalException("用户已被停用");
         }
-        sysUser.setPassword(Sm3Utils.encryption(entity.getNewPassword()));
+        sysUser.setPassword(SmUtil.sm3(entity.getNewPassword()));
         super.updateById(sysUser);
     }
 
@@ -117,7 +118,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         super.update(Wrappers.lambdaUpdate(SysUser.class)
                 .in(SysUser::getId, entity.getIds())
                 .ne(SysUser::getUserName, BizConstant.ADMIN)
-                .set(SysUser::getPassword, Sm3Utils.encryption(entity.getPassword())));
+                .set(SysUser::getPassword, SmUtil.sm3(entity.getPassword())));
     }
 
     @Override
@@ -151,7 +152,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         SysUser sysUser = new SysUser();
         BeanUtils.copyProperties(entity, sysUser);
-        sysUser.setPassword(Sm3Utils.encryption(sysUser.getPassword()));
+        sysUser.setPassword(SmUtil.sm3(sysUser.getPassword()));
         super.save(sysUser);
         //  关联附件信息
         sysFileService.coverRelation(new RelationFileVO(

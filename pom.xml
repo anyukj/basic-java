@@ -26,15 +26,13 @@
         <dynamic-datasource.version>3.4.1</dynamic-datasource.version>
         <mybatis-plus.version>3.4.3.4</mybatis-plus.version>
         <knife4j.version>2.0.9</knife4j.version>
-        <bcprov-jdk15on.version>1.66</bcprov-jdk15on.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-io.version>2.7</commons-io.version>
-        <jjwt.version>0.9.1</jjwt.version>
-        <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <hibernate-validator.version>7.0.0.Final</hibernate-validator.version>
         <thumbnailator.version>0.4.9</thumbnailator.version>
         <easyexcel.version>3.0.1</easyexcel.version>
-        <guava.version>31.0.1-jre</guava.version>
+        <hutool.version>5.7.20</hutool.version>
+        <bcprov-jdk15to18.version>1.69</bcprov-jdk15to18.version>
     </properties>
 
     <dependencies>
@@ -80,12 +78,6 @@
                 <artifactId>knife4j-spring-boot-starter</artifactId>
                 <version>${knife4j.version}</version>
             </dependency>
-            <!-- 加解密 -->
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15on</artifactId>
-                <version>${bcprov-jdk15on.version}</version>
-            </dependency>
             <!-- 其他工具 -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -96,16 +88,6 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt</artifactId>
-                <version>${jjwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-beanutils</groupId>
-                <artifactId>commons-beanutils</artifactId>
-                <version>${commons-beanutils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.validator</groupId>
@@ -123,9 +105,14 @@
                 <version>${easyexcel.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15to18</artifactId>
+                <version>${bcprov-jdk15to18.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
