@@ -39,7 +39,7 @@ public class RequestAspect {
             // 记录请求日志
             log.info("URI:{} UseTime:{}ms Parameter:{}",
                     request.getRequestURI(),
-                    stopWatch.getLastTaskTimeMillis(),
+                    stopWatch.getTotalTimeMillis(),
                     new JsonMapper().writeValueAsString(joinPoint.getArgs()));
         }
     }
