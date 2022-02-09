@@ -1,39 +1,38 @@
 package com.wsc.basic.biz.system.service.impl;
 
+import cn.hutool.core.img.ImgUtil;
+import cn.hutool.core.io.file.FileNameUtil;
+import cn.hutool.core.io.file.FileWriter;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wsc.basic.core.annotation.LockPoint;
-import com.wsc.basic.core.properties.FileProperties;
 import com.wsc.basic.biz.system.dao.SysFileMapper;
-import com.wsc.basic.biz.system.service.SysFileService;
 import com.wsc.basic.biz.system.model.dto.file.FileItemDTO;
 import com.wsc.basic.biz.system.model.entity.SysFile;
 import com.wsc.basic.biz.system.model.vo.file.QueryRelationFileVO;
 import com.wsc.basic.biz.system.model.vo.file.RelationFileVO;
+import com.wsc.basic.biz.system.service.SysFileService;
 import com.wsc.basic.core.config.security.UserContext;
 import com.wsc.basic.core.constant.I18nMsgConstants;
 import com.wsc.basic.core.exception.GlobalException;
 import com.wsc.basic.core.model.TokenEntity;
+import com.wsc.basic.core.properties.FileProperties;
 import com.wsc.basic.core.utils.SuperBeanUtils;
 import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 文件信息表(SysFile)表服务实现类
@@ -58,46 +57,42 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         TokenEntity tokenEntity = UserContext.getUser();
         List<String> result = new ArrayList<>();
         for (MultipartFile file : files) {
-            String key = UUID.randomUUID().toString().replace("-", "");
-            String prefix = Objects.requireNonNull(file.getOriginalFilename())
-                    .substring(Objects.requireNonNull(file.getOriginalFilename())
-                            .lastIndexOf(".") + 1);
-
             SysFile sysFile = new SysFile();
             sysFile.setOriginalName(file.getOriginalFilename());
             sysFile.setFileType(file.getContentType());
-            sysFile.setNewName(String.format("%s.%s", key, prefix));
+            sysFile.setNewName(StrUtil.format("{}.{}",
+                    IdUtil.fastSimpleUUID(),
+                    FileNameUtil.extName(file.getOriginalFilename())));
             if (tokenEntity != null) {
                 sysFile.setCreateUser(tokenEntity.getUserId());
             }
-            try {
-                // 图片类型的生成缩略图
-                if (sysFile.getFileType().indexOf("image/") == 0) {
-                    BufferedImage bufferedImage = Thumbnails.of(file.getInputStream())
-                            .size(fileProperties.getThumbWidth(), fileProperties.getThumbHeight())
-                            .asBufferedImage();
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    ImageIO.write(bufferedImage, prefix, bos);
-                    String imageBase64 = Base64.encodeBase64String(bos.toByteArray())
-                            .replace("\r", "")
-                            .replace("\n", "");
-                    sysFile.setThumb(String.format("data:image/png;base64,%s", imageBase64));
-                }
-            } catch (IOException e) {
-                throw new GlobalException(String.format("生成缩略图失败：%s", e.getMessage()));
-            }
 
+            if (sysFile.getFileType().indexOf("image/") == 0) {
+                // 图片类型的生成缩略图
+                try {
+                    BufferedImage image = ImgUtil.read(file.getInputStream());
+                    if (image != null) {
+                        double vw = NumberUtil.div(fileProperties.getThumbWidth(), image.getWidth());
+                        double vh = NumberUtil.div(fileProperties.getThumbHeight(), image.getHeight());
+                        Image scaleImage = ImgUtil.scale(image, (float) NumberUtil.min(vw, vh));
+                        String base64Image = ImgUtil.toBase64(scaleImage, "png");
+                        sysFile.setThumb(StrUtil.addPrefixIfNot(base64Image, "data:image/png;base64,"));
+                    }
+                } catch (Exception e) {
+                    log.error("生成缩略图失败：{}", e.getMessage());
+                }
+            }
             // 保存文件到本地
             try {
-                FileOutputStream fileOutputStream = new FileOutputStream(String.format("%s/%s", fileProperties.getUploadDir(), sysFile.getNewName()));
-                FileCopyUtils.copy(file.getBytes(), fileOutputStream);
+                FileWriter writer = new FileWriter(StrUtil.format("{}/{}", fileProperties.getUploadDir(), sysFile.getNewName()));
+                writer.write(file.getBytes(), 0, Math.toIntExact(file.getSize()));
             } catch (IOException e) {
-                throw new GlobalException(String.format("保存文件失败：%s", e.getMessage()));
+                throw new GlobalException(StrUtil.format("保存文件失败：{}", e.getMessage()));
             }
             // 保存文件到数据库
             boolean saveFlag = super.save(sysFile);
             if (!saveFlag) {
-                throw new GlobalException(String.format("保存失败：%s", sysFile.getOriginalName()));
+                throw new GlobalException(StrUtil.format("保存失败：{}", sysFile.getOriginalName()));
             }
             // 返回内容
             result.add(sysFile.getNewName());
