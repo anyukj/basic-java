@@ -11,6 +11,16 @@ spring:
   messages:
     basename: i18n/messages
     encoding: utf-8
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    dynamic:
+      druid:
+        initialSize: 0
+        minIdle: 10
+        max-active: 100
+        max-wait: 60000
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*Mapper.xml

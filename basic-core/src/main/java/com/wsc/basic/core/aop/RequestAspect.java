@@ -1,14 +1,14 @@
 package com.wsc.basic.core.aop;
 
+import cn.hutool.core.date.StopWatch;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.wsc.basic.core.constant.MDCConstants;
 import com.wsc.basic.core.model.Result;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -23,30 +23,28 @@ import javax.servlet.http.HttpServletRequest;
 @Slf4j
 @Aspect
 @Component
-public class AppRequestIdAspect {
+public class RequestAspect {
 
     @Resource
     private HttpServletRequest request;
 
-    /**
-     * 请求日志切入点
-     */
-    @Pointcut("execution(public * *..controller..*.*(..)) " +
-            "|| execution(public * *..exception..*.*(..)) ")
-    public void validPoint() {
-        // do nothing
-    }
-
-    @Before(value = "validPoint()")
-    public void before(JoinPoint joinPoint) {
-        // 记录请求日志
+    @Around(value = "execution(public * *..controller..*.*(..))")
+    public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
+        StopWatch stopWatch = new StopWatch();
         try {
-            log.info("URI:{}\t Parameter:{}", request.getRequestURI(), new JsonMapper().writeValueAsString(joinPoint.getArgs()));
-        } catch (Exception ignored) {
+            stopWatch.start();
+            return joinPoint.proceed();
+        } finally {
+            stopWatch.stop();
+            // 记录请求日志
+            log.info("URI:{} UseTime:{}ms Parameter:{}",
+                    request.getRequestURI(),
+                    stopWatch.getLastTaskTimeMillis(),
+                    new JsonMapper().writeValueAsString(joinPoint.getArgs()));
         }
     }
 
-    @AfterReturning(value = "validPoint()", returning = "result")
+    @AfterReturning(value = "execution(public * *..controller..*.*(..))  || execution(public * *..exception..*.*(..))", returning = "result")
     public void afterReturn(Result<?> result) {
         if (result != null && request != null) {
             Object requestObj = request.getAttribute(MDCConstants.REQUEST_ID);
