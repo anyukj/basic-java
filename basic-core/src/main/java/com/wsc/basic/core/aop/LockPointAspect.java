@@ -15,6 +15,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * 参数相同防止重入锁切点
  *
@@ -28,12 +30,14 @@ public class LockPointAspect {
 
     /** 创建缓存，默认10秒过期 */
     private static final TimedCache<String, Boolean> CACHES = CacheUtil.newTimedCache(DateUnit.SECOND.getMillis() * 10);
+    /** 缓存加锁进行 */
+    private final ReentrantLock lock = new ReentrantLock(true);
 
     @Around(value = "@annotation(lockPoint)")
     public Object around(ProceedingJoinPoint joinPoint, LockPoint lockPoint) throws Throwable {
         String key = generateKey(joinPoint);
+        lockKey(key);
         try {
-            lock(key);
             return joinPoint.proceed();
         } finally {
             CACHES.remove(key);
@@ -43,12 +47,17 @@ public class LockPointAspect {
     /**
      * 加锁
      */
-    private synchronized void lock(String key) {
-        if (CACHES.containsKey(key)) {
-            log.warn("重复的请求：{}", key);
-            throw new GlobalException("重复的请求");
+    private void lockKey(String key) {
+        lock.lock();
+        try {
+            if (CACHES.containsKey(key)) {
+                log.warn("重复的请求：{}", key);
+                throw new GlobalException("重复的请求");
+            }
+            CACHES.put(key, true);
+        } finally {
+            lock.unlock();
         }
-        CACHES.put(key, true);
     }
 
     /**
