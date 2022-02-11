@@ -1,7 +1,7 @@
 package com.wsc.basic.core.aop;
 
 import cn.hutool.core.date.StopWatch;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wsc.basic.core.constant.MDCConstants;
 import com.wsc.basic.core.model.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -37,10 +37,12 @@ public class RequestAspect {
         } finally {
             stopWatch.stop();
             // 记录请求日志
-            log.info("URI:{} UseTime:{}ms Parameter:{}",
-                    request.getRequestURI(),
-                    stopWatch.getTotalTimeMillis(),
-                    new JsonMapper().writeValueAsString(joinPoint.getArgs()));
+            String parameter = null;
+            try {
+                parameter = new ObjectMapper().writeValueAsString(joinPoint.getArgs());
+            } catch (Exception ignored) {
+            }
+            log.info("URI:{} UseTime:{}ms Parameter:{}", request.getRequestURI(), stopWatch.getTotalTimeMillis(), parameter);
         }
     }
 
