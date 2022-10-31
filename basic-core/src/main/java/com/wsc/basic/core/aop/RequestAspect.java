@@ -1,6 +1,5 @@
 package com.wsc.basic.core.aop;
 
-import cn.hutool.core.date.StopWatch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wsc.basic.core.constant.MDCConstants;
 import com.wsc.basic.core.model.Result;
@@ -9,7 +8,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -27,10 +28,12 @@ public class RequestAspect {
 
     @Resource
     private HttpServletRequest request;
+    @Resource
+    private MappingJackson2HttpMessageConverter httpMessageConverter;
 
     @Around(value = "execution(public * *..controller..*.*(..))")
     public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
-        StopWatch stopWatch = new StopWatch();
+        org.springframework.util.StopWatch stopWatch = new StopWatch();
         try {
             stopWatch.start();
             return joinPoint.proceed();
@@ -39,7 +42,7 @@ public class RequestAspect {
             // 记录请求日志
             String parameter = null;
             try {
-                parameter = new ObjectMapper().writeValueAsString(joinPoint.getArgs());
+                parameter = httpMessageConverter.getObjectMapper().writeValueAsString(joinPoint.getArgs());
             } catch (Exception ignored) {
             }
             log.info("URI:{} UseTime:{}ms Parameter:{}", request.getRequestURI(), stopWatch.getTotalTimeMillis(), parameter);
