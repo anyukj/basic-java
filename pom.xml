@@ -31,7 +31,7 @@
         <hibernate-validator.version>7.0.0.Final</hibernate-validator.version>
         <thumbnailator.version>0.4.9</thumbnailator.version>
         <easyexcel.version>3.0.1</easyexcel.version>
-        <hutool.version>5.7.20</hutool.version>
+        <hutool.version>5.8.9</hutool.version>
         <bcprov-jdk15to18.version>1.69</bcprov-jdk15to18.version>
     </properties>
 

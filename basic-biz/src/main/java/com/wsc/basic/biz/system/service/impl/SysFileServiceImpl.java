@@ -3,9 +3,7 @@ package com.wsc.basic.biz.system.service.impl;
 import cn.hutool.core.img.ImgUtil;
 import cn.hutool.core.io.file.FileNameUtil;
 import cn.hutool.core.io.file.FileWriter;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.*;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -23,6 +21,7 @@ import com.wsc.basic.core.model.TokenEntity;
 import com.wsc.basic.core.properties.FileProperties;
 import com.wsc.basic.core.utils.SuperBeanUtils;
 import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,31 +56,30 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         TokenEntity tokenEntity = UserContext.getUser();
         List<String> result = new ArrayList<>();
         for (MultipartFile file : files) {
+            String extName = FileNameUtil.extName(file.getOriginalFilename());
+            if (extName == null || ArrayUtil.containsIgnoreCase(new String[]{"jsw", "php", "asp", "net", "jsp"}, extName)) {
+                throw new GlobalException("不支持的文件类型");
+            }
+            String fileName = IdUtil.fastSimpleUUID();
+
             SysFile sysFile = new SysFile();
             sysFile.setOriginalName(file.getOriginalFilename());
             sysFile.setFileType(file.getContentType());
-            sysFile.setNewName(StrUtil.format("{}.{}",
-                    IdUtil.fastSimpleUUID(),
-                    FileNameUtil.extName(file.getOriginalFilename())));
+            sysFile.setNewName(StrUtil.format("{}.{}", fileName, extName));
             if (tokenEntity != null) {
                 sysFile.setCreateUser(tokenEntity.getUserId());
             }
 
             if (sysFile.getFileType().indexOf("image/") == 0) {
-                // 图片类型的生成缩略图
-                try {
-                    BufferedImage image = ImgUtil.read(file.getInputStream());
-                    if (image != null) {
-                        double vw = NumberUtil.div(fileProperties.getThumbWidth(), image.getWidth());
-                        double vh = NumberUtil.div(fileProperties.getThumbHeight(), image.getHeight());
-                        Image scaleImage = ImgUtil.scale(image, (float) NumberUtil.min(vw, vh));
-                        String base64Image = ImgUtil.toBase64(scaleImage, "png");
-                        sysFile.setThumb(StrUtil.addPrefixIfNot(base64Image, "data:image/png;base64,"));
-                    }
-                } catch (Exception e) {
-                    log.error("生成缩略图失败：{}", e.getMessage());
+                if (BooleanUtil.isTrue(fileProperties.getThumbToFile())) {
+                    // 保存为文件
+                    saveThumbFile(sysFile, file, fileName, extName);
+                } else {
+                    // 保存Base64
+                    saveThumbBase64(sysFile, file);
                 }
             }
+
             // 保存文件到本地
             try {
                 FileWriter writer = new FileWriter(StrUtil.format("{}/{}", fileProperties.getUploadDir(), sysFile.getNewName()));
@@ -139,6 +137,39 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         }
         List<SysFile> sysFiles = super.list(queryWrapper);
         return SuperBeanUtils.copyListProperties(sysFiles, FileItemDTO::new);
+    }
+
+    /** 保存缩略图为文件 */
+    private void saveThumbFile(SysFile sysFile, MultipartFile file, String fileName, String extName) {
+        try {
+            sysFile.setThumb(String.format("thumb/%s.%s", fileName, extName));
+            Thumbnails.of(file.getInputStream())
+                    .outputQuality(1)
+                    .size(fileProperties.getThumbWidth(), fileProperties.getThumbHeight())
+                    .toFile(String.format("%s/%s", fileProperties.getUploadDir(), sysFile.getThumb()));
+        } catch (IOException e) {
+            // 缩略图转换失败直接使用原图
+            log.warn("生成缩略图失败：{}", e.getMessage());
+            sysFile.setThumb(sysFile.getNewName());
+        }
+    }
+
+    /** 保存缩略图为Base64 */
+    private void saveThumbBase64(SysFile sysFile, MultipartFile file) {
+        // 图片类型的生成缩略图
+        try {
+            BufferedImage image = ImgUtil.read(file.getInputStream());
+            if (image != null) {
+                double vw = NumberUtil.div(fileProperties.getThumbWidth(), image.getWidth());
+                double vh = NumberUtil.div(fileProperties.getThumbHeight(), image.getHeight());
+                Image scaleImage = ImgUtil.scale(image, (float) NumberUtil.min(vw, vh));
+                String base64Image = ImgUtil.toBase64(scaleImage, "png");
+                sysFile.setThumb(StrUtil.addPrefixIfNot(base64Image, "data:image/png;base64,"));
+            }
+        } catch (Exception e) {
+            log.error("生成缩略图失败：{}", e.getMessage());
+            throw new GlobalException("生成缩略图失败");
+        }
     }
 
 }

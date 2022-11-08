@@ -1,5 +1,6 @@
 package com.wsc.basic.core.config;
 
+import cn.hutool.core.io.FileUtil;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -15,7 +16,6 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
 import javax.annotation.Resource;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -33,13 +33,9 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        File file = new File(fileProperties.getUploadDir());
-        if (!file.exists()) {
-            boolean mkdir = file.mkdirs();
-            if (!mkdir) {
-                log.error("创建上传文件夹目录失败:{}", fileProperties.getUploadDir());
-            }
-        }
+        FileUtil.mkdir(fileProperties.getUploadDir());
+        FileUtil.mkdir(fileProperties.getUploadDir() + "/thumb");
+
         // 映射静态文件的访问：用于访问上传文件
         log.info("文件下载路径/file/**：{}", fileProperties.getUploadDir());
         registry.addResourceHandler("/file/**").addResourceLocations(String.format("file:%s", fileProperties.getUploadDir()));

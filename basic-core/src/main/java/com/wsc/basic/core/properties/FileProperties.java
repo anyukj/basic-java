@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.file")
 public class FileProperties {
 
+    /** 缩略图是否保存为文件 */
+    private Boolean thumbToFile = false;
     /** 上传文件目录 */
     private String uploadDir = "/";
     /** 缩略图宽度 */
