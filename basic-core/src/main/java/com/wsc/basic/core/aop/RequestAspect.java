@@ -45,7 +45,10 @@ public class RequestAspect {
                 parameter = httpMessageConverter.getObjectMapper().writeValueAsString(joinPoint.getArgs());
             } catch (Exception ignored) {
             }
-            log.info("URI:{} UseTime:{}ms Parameter:{}", request.getRequestURI(), stopWatch.getTotalTimeMillis(), parameter);
+            try {
+                log.info("URI:{} UseTime:{}ms Parameter:{}", request.getRequestURI(), stopWatch.getTotalTimeMillis(), parameter);
+            } catch (Exception ignored) {
+            }
         }
     }
 
