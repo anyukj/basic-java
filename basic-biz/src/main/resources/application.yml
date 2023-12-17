@@ -69,3 +69,4 @@ app:
       - /actuator/**
       - /service/health/check
       - /sysUser/login
+      - /moli/**
