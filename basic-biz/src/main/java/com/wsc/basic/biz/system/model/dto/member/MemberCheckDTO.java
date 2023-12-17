@@ -1,5 +1,6 @@
 package com.wsc.basic.biz.system.model.dto.member;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,7 +20,11 @@ import java.time.LocalDateTime;
 @Data
 public class MemberCheckDTO {
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty(value = "过期时间")
     private LocalDateTime expirationTime;
+
+    @ApiModelProperty(value = "用户等级：1试用、2普通、3高级")
+    private Integer level;
 
 }

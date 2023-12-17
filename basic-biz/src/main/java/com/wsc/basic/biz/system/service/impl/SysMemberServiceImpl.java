@@ -43,7 +43,7 @@ public class SysMemberServiceImpl extends ServiceImpl<SysMemberMapper, SysMember
             baseMapper.updateById(sysMember);
         }
         // 返回实体信息
-        return new MemberCheckDTO(sysMember.getExpirationTime());
+        return new MemberCheckDTO(sysMember.getExpirationTime(), sysMember.getLevel());
     }
 
 }

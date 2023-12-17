@@ -37,4 +37,7 @@ public class SysMember extends BaseDeletionDO<SysMember> {
     @ApiModelProperty(value = "状态：0正常、1停用")
     private Integer status;
 
+    @ApiModelProperty(value = "用户等级：1试用、2普通、3高级")
+    private Integer level;
+
 }
