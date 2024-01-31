@@ -2,6 +2,7 @@ package com.wsc.basic.biz.system.controller;
 
 import com.wsc.basic.biz.system.model.dto.member.MemberCheckDTO;
 import com.wsc.basic.biz.system.model.vo.member.MemberCheckVO;
+import com.wsc.basic.biz.system.model.vo.member.MemberMonitorVO;
 import com.wsc.basic.biz.system.service.SysMemberService;
 import com.wsc.basic.core.model.Result;
 import io.swagger.annotations.Api;
@@ -30,6 +31,12 @@ public class SysMemberController {
     @PostMapping("check")
     public Result<MemberCheckDTO> check(@Valid @RequestBody MemberCheckVO entity) {
         return Result.success(sysMemberService.check(entity));
+    }
+
+    @ApiOperation("监控破解用户")
+    @PostMapping("monitor")
+    public Result<Boolean> monitor(@RequestBody MemberMonitorVO entity) {
+        return Result.success(sysMemberService.monitor(entity));
     }
 
 }

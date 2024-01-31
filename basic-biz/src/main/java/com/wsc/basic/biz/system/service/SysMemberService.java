@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.wsc.basic.biz.system.model.dto.member.MemberCheckDTO;
 import com.wsc.basic.biz.system.model.entity.SysMember;
 import com.wsc.basic.biz.system.model.vo.member.MemberCheckVO;
+import com.wsc.basic.biz.system.model.vo.member.MemberMonitorVO;
 
 /**
  * 会员表(SysUser)表服务接口
@@ -20,5 +21,13 @@ public interface SysMemberService extends IService<SysMember> {
      * @return 结束
      */
     MemberCheckDTO check(MemberCheckVO entity);
+
+    /**
+     * 监控破解用户信息
+     *
+     * @param entity 实体
+     * @return 标识
+     */
+    Boolean monitor(MemberMonitorVO entity);
 
 }

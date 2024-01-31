@@ -1,12 +1,14 @@
 package com.wsc.basic.biz.system.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wsc.basic.biz.system.dao.SysMemberMapper;
 import com.wsc.basic.biz.system.model.dto.member.MemberCheckDTO;
 import com.wsc.basic.biz.system.model.entity.SysMember;
 import com.wsc.basic.biz.system.model.vo.member.MemberCheckVO;
+import com.wsc.basic.biz.system.model.vo.member.MemberMonitorVO;
 import com.wsc.basic.biz.system.service.SysMemberService;
 import com.wsc.basic.core.exception.GlobalException;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +36,7 @@ public class SysMemberServiceImpl extends ServiceImpl<SysMemberMapper, SysMember
             throw new GlobalException("卡号已被禁用");
         } else if (sysMember.getExpirationTime().compareTo(LocalDateTime.now()) < 0) {
             throw new GlobalException("卡号已过期");
-        } else if(sysMember.getId() != 1 && StrUtil.isNotBlank(sysMember.getMac()) && !StrUtil.equals(sysMember.getMac(), entity.getMac())) {
+        } else if (sysMember.getId() != 1 && StrUtil.isNotBlank(sysMember.getMac()) && !StrUtil.equals(sysMember.getMac(), entity.getMac())) {
             throw new GlobalException("卡号已绑定别的设备");
         }
         // 如果mac为空那么绑定
@@ -44,6 +46,12 @@ public class SysMemberServiceImpl extends ServiceImpl<SysMemberMapper, SysMember
         }
         // 返回实体信息
         return new MemberCheckDTO(sysMember.getExpirationTime(), sysMember.getLevel());
+    }
+
+    @Override
+    public Boolean monitor(MemberMonitorVO entity) {
+        log.error("破解会员卡监控：" + JSONUtil.toJsonStr(entity));
+        return true;
     }
 
 }
