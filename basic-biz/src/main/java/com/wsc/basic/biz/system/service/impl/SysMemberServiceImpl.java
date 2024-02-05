@@ -50,8 +50,14 @@ public class SysMemberServiceImpl extends ServiceImpl<SysMemberMapper, SysMember
 
     @Override
     public Boolean monitor(MemberMonitorVO entity) {
-        log.error("破解会员卡监控：" + JSONUtil.toJsonStr(entity));
-        return true;
+        Long selectCount = baseMapper.selectCount(Wrappers.lambdaQuery(SysMember.class)
+                .eq(StrUtil.isNotBlank(entity.getMac()), SysMember::getMac, entity.getMac()));
+        if (selectCount > 0) {
+            log.error("正常会员卡监控：" + JSONUtil.toJsonStr(entity));
+        } else {
+            log.error("破解会员卡监控：" + JSONUtil.toJsonStr(entity));
+        }
+        return selectCount > 0;
     }
 
 }
